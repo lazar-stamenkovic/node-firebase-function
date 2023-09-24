@@ -1,7 +1,11 @@
 import * as hubspot from '@hubspot/api-client';
 import * as logger from "firebase-functions/logger";
-import {firebaseAdmin} from "./";
+import * as firebaseAdmin from "firebase-admin";
 
+const serviceAccount = require("../transax-integrations-hubspot.json");
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+});
 
 let tokenStore: any
 const hubspotClient = new hubspot.Client()
@@ -40,7 +44,9 @@ async function refreshToken() {
     process.env.HUBSPOT_CLIENT_SECRET,
     tokenStore.refreshToken
   );
-  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(result)))
+  tokenStore = result;
+  tokenStore.updatedAt = Date.now();
+  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(tokenStore)))
   return result
 }
 
@@ -56,6 +62,7 @@ export async function getAccessToken(code: string) {
   logger.info('Retrieving access token result:', tokensResponse);
   tokenStore = tokensResponse;
   tokenStore.updatedAt = Date.now();
+  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(tokenStore)))
   return tokensResponse
 }
 

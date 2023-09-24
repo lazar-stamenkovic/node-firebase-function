@@ -9,18 +9,10 @@
 
 import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import * as firebaseAdmin from "firebase-admin";
 
 import * as Hubspot from "./hubspot";
 
-export { firebaseAdmin }
-
 require('dotenv').config()
-const serviceAccount = require("../transax-integrations-hubspot.json");
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount),
-});
-
 
 export const hubspotSubmit = onRequest(async (request, response) => {
   logger.info({ "hubspotSubmit request body": request.body})
@@ -48,6 +40,5 @@ export const getHubspotAccessToken = onRequest(async (request, response) => {
     response.status(400).send('invalid code')
   }
   const tokenRes = await Hubspot.getAccessToken(code)
-  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(tokenRes)))
   response.status(200).send(tokenRes);
 })
