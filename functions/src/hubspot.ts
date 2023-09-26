@@ -2,6 +2,9 @@ import * as hubspot from '@hubspot/api-client';
 import * as logger from "firebase-functions/logger";
 import * as firebaseAdmin from "firebase-admin";
 import fetch from 'node-fetch';
+import { HubspotTicketStatus } from './types';
+
+// import { SimplePublicObject } from '@hubspot/api-client/lib/codegen/crm/companies';
 
 const serviceAccount = require("../transax-integrations-hubspot.json");
 firebaseAdmin.initializeApp({
@@ -42,6 +45,14 @@ export async function getTicketById(id: string) {
     }
   }
   return { ...ticket.properties, contact}
+}
+
+export async function closeTicketById(id: string) {
+  await setAccessToken()
+  const ticket = await hubspotClient.crm.tickets.basicApi.update(id,  {'properties': {
+    'hs_pipeline_stage': HubspotTicketStatus.Closed
+  }})
+  return ticket
 }
 
 async function setAccessToken() {

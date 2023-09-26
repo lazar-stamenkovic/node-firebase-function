@@ -38,6 +38,16 @@ export const hubspotSubmit = onRequest(async (request, response) => { // webhook
   }
 })
 
+export const intercomTicketUpdated = onRequest(async (request, response) => { // webhook on intercom ticket updated
+  logger.info({ "intercomTicketUpdated": request.body})
+  if (request.body.topic === 'ticket.state.updated') {
+    // TODO: get hubspot ticket id
+    
+  }
+  const result = await Hubspot.closeTicketById('1932603704')
+  response.status(200).send(result)
+})
+
 export const getHubspotAccessToken = onRequest(async (request, response) => {
   logger.info({ "getHubspotAccessToken request body": request.body})
   const code = request.body.code

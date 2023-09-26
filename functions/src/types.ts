@@ -8,3 +8,8 @@ export interface HubspotTicketData {
   content: string
   hs_ticket_priority: string
 }
+
+export enum HubspotTicketStatus {
+  Waiting = '3',
+  Closed = '4'
+}

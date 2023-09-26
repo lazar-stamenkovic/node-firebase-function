@@ -1,7 +1,12 @@
 import * as intercom from 'intercom-client';
 import { HubspotTicketData } from './types';
 import * as logger from "firebase-functions/logger";
+// import * as firebaseAdmin from "firebase-admin";
 
+// const serviceAccount = require("../transax-integrations-hubspot.json");
+// firebaseAdmin.initializeApp({
+//   credential: firebaseAdmin.credential.cert(serviceAccount),
+// });
 
 export async function createBackOfficeTicket(data: HubspotTicketData) {
 
@@ -57,5 +62,7 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
     }
   );
   const res = await resp.json();
+  // await firebaseAdmin.firestore().collection('tickets').doc(data.).set(JSON.parse(JSON.stringify(tokenStore)))
+
   return res
 }
