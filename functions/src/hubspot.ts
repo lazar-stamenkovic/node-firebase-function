@@ -1,6 +1,7 @@
 import * as hubspot from '@hubspot/api-client';
 import * as logger from "firebase-functions/logger";
 import * as firebaseAdmin from "firebase-admin";
+import fetch from 'node-fetch';
 
 const serviceAccount = require("../transax-integrations-hubspot.json");
 firebaseAdmin.initializeApp({
@@ -16,8 +17,32 @@ const GRANT_TYPES = {
 
 export async function getTicketById(id: string) {
   await setAccessToken()
-  const res = await hubspotClient.crm.tickets.basicApi.getById(id, ['subject', 'content', 'created_by', 'hs_ticket_priority'])
-  return res
+  const ticket = await hubspotClient.crm.tickets.basicApi.getById(id, ['subject', 'content', 'created_by', 'hs_ticket_priority', 'hs_primary_company_name', 'source_type', 'hs_last_email_activity', 'contacts', 'hs_created_by_user_id'])
+  // get contacts id list
+  console.log(ticket)
+  const assRes = await fetch(
+    `https://api.hubspot.com/crm-associations/v1/associations/${id}/HUBSPOT_DEFINED/16`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenStore.accessToken}`
+      }
+    }
+  );
+  const assData = await assRes.json();
+  let contact = undefined
+  // get contact detail with email, firstname, lastname
+  if (assData?.results?.length) {
+    const contactId = assData.results[0]
+    const contactRes = await hubspotClient.crm.contacts.basicApi.getById(contactId, ['email', 'firstname', 'lastname'])
+    contact = {
+      email: contactRes.properties.email,
+      firstname: contactRes.properties.firstname,
+      lastname: contactRes.properties.lastname
+    }
+  }
+  return { ...ticket.properties, contact}
 }
 
 async function setAccessToken() {

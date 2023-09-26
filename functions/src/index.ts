@@ -14,7 +14,7 @@ import * as Hubspot from "./hubspot";
 
 require('dotenv').config()
 
-export const hubspotSubmit = onRequest(async (request, response) => {
+export const hubspotSubmit = onRequest(async (request, response) => { // webhook on hubspot ticket creation
   logger.info({ "hubspotSubmit": request.body})
   const body = request.body
   try {
