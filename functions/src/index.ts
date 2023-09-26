@@ -17,12 +17,13 @@ import { HubspotTicketData } from "./types";
 require('dotenv').config()
 
 export const hubspotSubmit = onRequest(async (request, response) => { // webhook on hubspot ticket creation
-  logger.info({ "hubspotSubmit": request.body})
-  const body = request.body
+  logger.info({ "webhookbody": request.body})
+  const data = request.body.length > 0 ? request.body[0] : null
+  logger.info({ "hubspotSubmitData": data})
   try {
-    if (body.subscriptionType === 'ticket.creation') {
+    if (data.subscriptionType === 'ticket.creation') {
       // get hubspot ticket detail
-      const ticket =  await Hubspot.getTicketById(body.objectId)
+      const ticket =  await Hubspot.getTicketById(data.objectId)
       logger.info({ "ticket": ticket, msg: "success to get ticket from webhook"})
       // create intercom back-office ticket based on hubspot ticket data
       const result = await Intercom.createBackOfficeTicket(ticket as HubspotTicketData)
