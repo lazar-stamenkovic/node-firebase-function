@@ -1,15 +1,8 @@
 import * as hubspot from '@hubspot/api-client';
 import * as logger from "firebase-functions/logger";
-import * as firebaseAdmin from "firebase-admin";
 import fetch from 'node-fetch';
 import { HubspotTicketStatus } from './types';
-
-// import { SimplePublicObject } from '@hubspot/api-client/lib/codegen/crm/companies';
-
-const serviceAccount = require("../transax-integrations-hubspot.json");
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount),
-});
+import * as firebase from './firebase';
 
 let tokenStore: any
 const hubspotClient = new hubspot.Client()
@@ -39,6 +32,7 @@ export async function getTicketById(id: string) {
     const contactId = assData.results[0]
     const contactRes = await hubspotClient.crm.contacts.basicApi.getById(contactId, ['email', 'firstname', 'lastname'])
     contact = {
+      id: contactId,
       email: contactRes.properties.email,
       firstname: contactRes.properties.firstname,
       lastname: contactRes.properties.lastname
@@ -56,9 +50,7 @@ export async function closeTicketById(id: string) {
 }
 
 async function setAccessToken() {
-  tokenStore = await firebaseAdmin.firestore().collection('hubspot').doc('tokens').get().then(doc => {
-    return doc && doc.data()
-  })
+  tokenStore = await firebase.getHubSpotToken()
   logger.info({ "tokenstore": tokenStore, "function": "setAccessToken"});
   if (!isAuthorized()) {
     throw Error("no tokenstore, please call getHubspotAccessToken function with a valid code")
@@ -81,7 +73,7 @@ async function refreshToken() {
   );
   tokenStore = result;
   tokenStore.updatedAt = Date.now();
-  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(tokenStore)))
+  await firebase.saveHubSpotToken(tokenStore)
   return result
 }
 
@@ -97,7 +89,7 @@ export async function getAccessToken(code: string) {
   logger.info('Retrieving access token result:', tokensResponse);
   tokenStore = tokensResponse;
   tokenStore.updatedAt = Date.now();
-  await firebaseAdmin.firestore().collection('hubspot').doc('tokens').set(JSON.parse(JSON.stringify(tokenStore)))
+  await firebase.saveHubSpotToken(tokenStore)
   return tokensResponse
 }
 

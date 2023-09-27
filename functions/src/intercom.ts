@@ -29,7 +29,10 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
     }
     const contactId = searchRes.data[0].id
     const res = await createTicket(contactId, data)
-    return res
+    return {
+      ...res,
+      contactId
+    }
   } catch (e) {
     logger.info({ "intercom-e": e })
     throw e
