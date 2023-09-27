@@ -19,6 +19,8 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
       throw new Error('Failed to serach intercom contact');
     }
     const contactId = searchRes.data[0].id
+    logger.info({ "contactId": contactId, "data": data })
+
     const res = await createTicket(contactId, data)
     return {
       ...res,
@@ -32,6 +34,19 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
 
 async function createTicket(contactId: string, data: HubspotTicketData) {
   const BACK_OFFICT_TICKET_TYPE_ID = 2
+  const body = JSON.stringify({
+    ticket_type_id: BACK_OFFICT_TICKET_TYPE_ID,
+    contacts: [
+      {
+        id: contactId
+      }
+    ],
+    ticket_attributes: {
+      _default_title_: data.subject || '',
+      _default_description_: data.content || '',
+      'Primary Company': data.hs_primary_company_name
+    }
+  })
   const resp = await fetch(
     `https://api.intercom.io/tickets`,
     {
@@ -41,19 +56,7 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
         'Intercom-Version': '2.10',
         Authorization: `Bearer ${process.env.INTERCOM_ACCESS_TOKEN}`
       },
-      body: JSON.stringify({
-        ticket_type_id: BACK_OFFICT_TICKET_TYPE_ID,
-        contacts: [
-          {
-            id: contactId
-          }
-        ],
-        ticket_attributes: {
-          _default_title_: data.subject,
-          _default_description_: data.content,
-          'Primary Company': data.hs_primary_company_name
-        }
-      })
+      body: body
     }
   );
   const res = await resp.json();
