@@ -27,8 +27,6 @@ export const hubspotSubmit = onRequest(async (request, response) => { // webhook
       // get hubspot ticket detail
       const ticket =  await Hubspot.getTicketById(data.objectId)
       logger.info({ "ticket": ticket, msg: "success to get ticket from webhook"})
-      response.status(200).send(ticket);
-
       // create intercom back-office ticket based on hubspot ticket data
       const result = await Intercom.createBackOfficeTicket(ticket as HubspotTicketData)
       logger.info({ "result": result, msg: "ticket creation succeed"})
