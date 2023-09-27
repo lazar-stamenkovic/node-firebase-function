@@ -5,16 +5,13 @@ import * as logger from "firebase-functions/logger";
 export async function createBackOfficeTicket(data: HubspotTicketData) {
 
   const intercomClient = new intercom.Client({ tokenAuth: { token: process.env.INTERCOM_ACCESS_TOKEN || ''} })
-  if (!data.contact?.email) {
-    throw new Error(`cannot find contact email from hubspot data`)
-  }
   try {
     // get intercom contact id by email
     const searchRes = await intercomClient.contacts.search({
       data: {
         query: {
             operator: intercom.Operators.AND,
-            value: [{field: 'email',operator:intercom.Operators.EQUALS, value: data.contact?.email} ]
+            value: [{field: 'email',operator:intercom.Operators.EQUALS, value: data.contact?.email || 'support@transax.com'} ]
         }
       }
     })
