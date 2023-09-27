@@ -50,7 +50,8 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
         ],
         ticket_attributes: {
           _default_title_: data.subject,
-          _default_description_: data.content
+          _default_description_: data.content,
+          'Primary Company': data.hs_primary_company_name
         }
       })
     }
