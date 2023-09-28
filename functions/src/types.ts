@@ -8,7 +8,7 @@ export interface HubspotTicketData {
   subject: string
   content: string
   hs_ticket_priority: string
-  hs_primary_company_name: string
+  hs_primary_company: string
 }
 
 export enum HubspotTicketStatus {

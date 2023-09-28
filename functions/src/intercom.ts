@@ -3,22 +3,24 @@ import { HubspotTicketData } from './types';
 import * as logger from "firebase-functions/logger";
 
 export async function createBackOfficeTicket(data: HubspotTicketData) {
-
+  const default_contact_id = '64faa01e11437163e1b21c08' // email is 'support@transax.com'
   const intercomClient = new intercom.Client({ tokenAuth: { token: process.env.INTERCOM_ACCESS_TOKEN || ''} })
+  let contactId = default_contact_id
   try {
     // get intercom contact id by email
-    const searchRes = await intercomClient.contacts.search({
-      data: {
-        query: {
-            operator: intercom.Operators.AND,
-            value: [{field: 'email',operator:intercom.Operators.EQUALS, value: data.contact?.email || 'support@transax.com'} ]
+    if (data.contact.email) {
+      const searchRes = await intercomClient.contacts.search({
+        data: {
+          query: {
+              operator: intercom.Operators.AND,
+              value: [{field: 'email',operator:intercom.Operators.EQUALS, value: data.contact.email } ]
+          }
         }
+      })
+      if (searchRes?.data && searchRes.data.length > 0) {
+        contactId = searchRes.data[0].id
       }
-    })
-    if (!searchRes?.data || !searchRes?.data.length) {
-      throw new Error('Failed to serach intercom contact');
     }
-    const contactId = searchRes.data[0].id
     const res = await createTicket(contactId, data)
     return {
       ...res,
@@ -42,7 +44,8 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
     ticket_attributes: {
       _default_title_: data.subject || '',
       _default_description_: data.content || '',
-      'Primary Company': data.hs_primary_company_name || ''
+      'Primary Company': data.hs_primary_company || '',
+      'Priority': data.hs_ticket_priority || ''
     }
   })
   const resp = await fetch(
@@ -60,3 +63,4 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
   const res = await resp.json();
   return res
 }
+
