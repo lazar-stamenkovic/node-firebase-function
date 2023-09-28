@@ -19,8 +19,6 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
       throw new Error('Failed to serach intercom contact');
     }
     const contactId = searchRes.data[0].id
-    logger.info({ "contactId": contactId, "data": data })
-
     const res = await createTicket(contactId, data)
     return {
       ...res,
@@ -44,7 +42,7 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
     ticket_attributes: {
       _default_title_: data.subject || '',
       _default_description_: data.content || '',
-      'Primary Company': data.hs_primary_company_name
+      'Primary Company': data.hs_primary_company_name || ''
     }
   })
   const resp = await fetch(
