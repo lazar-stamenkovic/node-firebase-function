@@ -1,9 +1,9 @@
 import * as intercom from 'intercom-client';
-import { HubspotTicketData, IntercomTicketType, HUBSPOT_FEATURE_REQUEST_PIPELINE } from './types';
+import { HubspotTicketData, IntercomTicketType, HUBSPOT_FEATURE_REQUEST_PIPELINE, INTERCOM_DEFAULT_CONTACT_ID } from './types';
 import * as logger from "firebase-functions/logger";
 
 export async function createBackOfficeTicket(data: HubspotTicketData) {
-  const default_contact_id = '64faa01e11437163e1b21c08' // email is 'support@transax.com'
+  const default_contact_id = INTERCOM_DEFAULT_CONTACT_ID // email is 'support@transax.com'
   const intercomClient = new intercom.Client({ tokenAuth: { token: process.env.INTERCOM_ACCESS_TOKEN || ''} })
   let contactId = default_contact_id
   try {
@@ -34,8 +34,27 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
 
 async function createTicket(contactId: string, data: HubspotTicketData) {
   let ticket_type_id = IntercomTicketType.Defect
+  let attribute = undefined
   if (data.hs_pipeline === HUBSPOT_FEATURE_REQUEST_PIPELINE ) {
     ticket_type_id = IntercomTicketType.FeatureRequest
+    attribute = {
+      _default_title_: data.subject || '',
+      _default_description_: data.content || '',
+      'Primary Company': data.hs_primary_company || '',
+      'Priority': data.hs_ticket_priority || '',
+      'Contact Email': data.contact?.email || ''
+    }
+  } else {
+    ticket_type_id = IntercomTicketType.Defect
+    attribute = {
+      _default_title_: data.subject || '',
+      _default_description_: data.content || '',
+      'Customer Type': ['Standard Customer'],
+      'Primary Company': data.hs_primary_company || '',
+      'Priority': data.hs_ticket_priority || '',
+      'Contact Email': data.contact?.email || '',
+      'Area of Defect': ['Messaging', 'Transax Dashboard']
+    }
   }
   const body = JSON.stringify({
     ticket_type_id: ticket_type_id,
@@ -44,13 +63,7 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
         id: contactId
       }
     ],
-    ticket_attributes: {
-      _default_title_: data.subject || '',
-      _default_description_: data.content || '',
-      'Primary Company': data.hs_primary_company || '',
-      'Priority': data.hs_ticket_priority || '',
-      'Contact Email': data.contact?.email || ''
-    }
+    ticket_attributes: attribute
   })
   const resp = await fetch(
     `https://api.intercom.io/tickets`,

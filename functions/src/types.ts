@@ -32,3 +32,4 @@ export interface FirebaseTicket {
 }
 
 export const HUBSPOT_FEATURE_REQUEST_PIPELINE = '0'
+export const INTERCOM_DEFAULT_CONTACT_ID = '64faa01e11437163e1b21c08' // email is 'support@transax.com'

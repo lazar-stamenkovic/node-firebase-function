@@ -31,14 +31,16 @@ export const hubspotSubmit = onRequest(async (request, response) => { // webhook
       // create intercom back-office ticket based on hubspot ticket data
       const result = await Intercom.createBackOfficeTicket(ticket as HubspotTicketData)
       logger.info({ "result": result, msg: "ticket creation succeed"})
-      await Firebase.saveTicket({
-        hubspot_ticket_id: data.objectId,
-        hubspot_contact_id: ticket.contact?.id,
-        Hubspot_ticket_pipeline: ticket.hs_pipeline,
-        intercom_ticket_id: result.id,
-        intercom_contact_id: result.contactId
-      })
-      response.status(200).send(ticket);
+      if (result?.id) {
+        await Firebase.saveTicket({
+          hubspot_ticket_id: data.objectId,
+          hubspot_contact_id: ticket.contact?.id,
+          Hubspot_ticket_pipeline: ticket.hs_pipeline,
+          intercom_ticket_id: result.id,
+          intercom_contact_id: result.contactId
+        })  
+      }
+      response.status(200).send(result);
     } else {
       console.log('invalid request')
       response.status(400).send('invalid request')
