@@ -13,6 +13,7 @@ import * as logger from "firebase-functions/logger";
 import * as Hubspot from "./hubspot";
 import * as Intercom from "./intercom";
 import * as Firebase from "./firebase";
+import * as ProductBoard from "./product_board";
 
 import { HubspotTicketData } from "./types";
 
@@ -56,10 +57,12 @@ export const intercomTicketUpdated = onRequest(async (request, response) => { //
         logger.info({ "success": false, msg: "can't get ticket data from request body"})
         throw new Error("can't get ticket data from request body")
       }
-      if (intercomTicket.ticket_state === "resolved") {
+      if (intercomTicket.ticket_state === "resolved" || intercomTicket.ticket_state === "closed") {
         const firebaseTicket = await Firebase.getTicketByIntercomTicketId(intercomTicket.id)
         if (firebaseTicket) {
-          const result = await Hubspot.closeTicketById(firebaseTicket.hubspot_ticket_id)  
+          const ticket =  await Hubspot.getTicketById(firebaseTicket.hubspot_ticket_id)
+          const result = await Hubspot.closeTicketById(firebaseTicket.hubspot_ticket_id)
+          await ProductBoard.createNote(ticket as HubspotTicketData)
           response.status(200).send(result)
         } else {
           logger.info({ "success": false, msg: "can't find firebase ticket"})
