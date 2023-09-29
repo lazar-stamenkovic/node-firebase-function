@@ -1,5 +1,5 @@
 export interface HubspotTicketData {
-  contact: {
+  contact?: {
     id: string
     email: string
     firstname: string

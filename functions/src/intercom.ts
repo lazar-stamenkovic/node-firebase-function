@@ -8,7 +8,7 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
   let contactId = default_contact_id
   try {
     // get intercom contact id by email
-    if (data.contact.email) {
+    if (data.contact) {
       const searchRes = await intercomClient.contacts.search({
         data: {
           query: {
@@ -45,7 +45,8 @@ async function createTicket(contactId: string, data: HubspotTicketData) {
       _default_title_: data.subject || '',
       _default_description_: data.content || '',
       'Primary Company': data.hs_primary_company || '',
-      'Priority': data.hs_ticket_priority || ''
+      'Priority': data.hs_ticket_priority || '',
+      'Contact Email': data.contact?.email || ''
     }
   })
   const resp = await fetch(

@@ -60,7 +60,7 @@ export const intercomTicketUpdated = onRequest(async (request, response) => { //
         const firebaseTicket = await Firebase.getTicketByIntercomTicketId(intercomTicket.id)
         if (firebaseTicket) {
           const result = await Hubspot.closeTicketById(firebaseTicket.hubspot_ticket_id)  
-          response.status(200).send(result)  
+          response.status(200).send(result)
         } else {
           logger.info({ "success": false, msg: "can't find firebase ticket"})
           response.status(500).send("can't find firebase ticket")
