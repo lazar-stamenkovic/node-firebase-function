@@ -1,5 +1,5 @@
 import * as intercom from 'intercom-client';
-import { HubspotTicketData } from './types';
+import { HubspotTicketData, IntercomTicketType, HUBSPOT_FEATURE_REQUEST_PIPELINE } from './types';
 import * as logger from "firebase-functions/logger";
 
 export async function createBackOfficeTicket(data: HubspotTicketData) {
@@ -33,9 +33,12 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
 }
 
 async function createTicket(contactId: string, data: HubspotTicketData) {
-  const BACK_OFFICT_TICKET_TYPE_ID = 2
+  let ticket_type_id = IntercomTicketType.Defect
+  if (data.hs_pipeline === HUBSPOT_FEATURE_REQUEST_PIPELINE ) {
+    ticket_type_id = IntercomTicketType.FeatureRequest
+  }
   const body = JSON.stringify({
-    ticket_type_id: BACK_OFFICT_TICKET_TYPE_ID,
+    ticket_type_id: ticket_type_id,
     contacts: [
       {
         id: contactId

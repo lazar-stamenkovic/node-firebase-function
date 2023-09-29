@@ -15,7 +15,7 @@ import * as Intercom from "./intercom";
 import * as Firebase from "./firebase";
 import * as ProductBoard from "./product_board";
 
-import { HubspotTicketData } from "./types";
+import { HubspotTicketData, IntercomTicketType } from "./types";
 
 require('dotenv').config()
 
@@ -34,10 +34,11 @@ export const hubspotSubmit = onRequest(async (request, response) => { // webhook
       await Firebase.saveTicket({
         hubspot_ticket_id: data.objectId,
         hubspot_contact_id: ticket.contact?.id,
+        Hubspot_ticket_pipeline: ticket.hs_pipeline,
         intercom_ticket_id: result.id,
         intercom_contact_id: result.contactId
       })
-      response.status(200).send(result);
+      response.status(200).send(ticket);
     } else {
       console.log('invalid request')
       response.status(400).send('invalid request')
@@ -50,29 +51,38 @@ export const hubspotSubmit = onRequest(async (request, response) => { // webhook
 export const intercomTicketUpdated = onRequest(async (request, response) => { // webhook on intercom ticket updated
   logger.info({ "intercomTicketUpdated": request.body})
   try {
-    if (request.body.topic === 'ticket.state.updated') {
-      // TODO: get hubspot ticket id
-      const intercomTicket = request.body.data?.item
-      if (!intercomTicket) {
-        logger.info({ "success": false, msg: "can't get ticket data from request body"})
-        throw new Error("can't get ticket data from request body")
-      }
-      if (intercomTicket.ticket_state === "resolved" || intercomTicket.ticket_state === "closed") {
-        const firebaseTicket = await Firebase.getTicketByIntercomTicketId(intercomTicket.id)
-        if (firebaseTicket) {
-          const ticket =  await Hubspot.getTicketById(firebaseTicket.hubspot_ticket_id)
-          const result = await Hubspot.closeTicketById(firebaseTicket.hubspot_ticket_id)
-          await ProductBoard.createNote(ticket as HubspotTicketData)
-          response.status(200).send(result)
-        } else {
-          logger.info({ "success": false, msg: "can't find firebase ticket"})
-          response.status(500).send("can't find firebase ticket")
-        }
-      } else {
-        logger.info({ "success": false, msg: "not resolved ticket"})
-        throw new Error("not resolved ticket")
-      }
+    if (request.body.topic !== 'ticket.state.updated') {
+      logger.info({ "success": false, msg: "not state updated topic"})
+      response.status(200).send("not state updated topic")
     }
+    const intercomTicket = request.body.data?.item
+    if (!intercomTicket) {
+      logger.info({ "success": false, msg: "can't get ticket data from request body"})
+      throw new Error("can't get ticket data from request body")
+    }
+    logger.info({ "intercomTicket": intercomTicket, msg: "success to get intercom ticket"})
+    if (!['resolved', 'closed'].includes(intercomTicket.ticket_state)) {
+      logger.info({ "success": false, msg: "not resolved ticket"})
+      response.status(200).send("not resolved ticket")
+      return
+    }
+    if (intercomTicket.ticket_type.id !== IntercomTicketType.FeatureRequest) {
+      logger.info({ "success": false, msg: "not feature request ticket"})
+      response.status(200).send("not feature request ticket")
+      return
+    }
+    const firebaseTicket = await Firebase.getTicketByIntercomTicketId(intercomTicket.id)
+    if (!firebaseTicket) {
+      logger.info({ "success": false, msg: "can't find firebase ticket"})
+      throw new Error("can't find firebase ticket")
+    }
+    const ticket =  await Hubspot.getTicketById(firebaseTicket.hubspot_ticket_id)
+    const result = await Hubspot.closeTicketById(firebaseTicket.hubspot_ticket_id)
+    if (!firebaseTicket.product_board_id) {
+      const prodRes = await ProductBoard.createNote(ticket as HubspotTicketData)
+      await Firebase.updateTicket(firebaseTicket.id, {product_board_id: prodRes.data?.id })  
+    }
+    response.status(200).send(result)
   } catch(e: any) {
     logger.info({ "success": false, msg: e})
     response.status(500).send(e)

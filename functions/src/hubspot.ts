@@ -1,7 +1,7 @@
 import * as hubspot from '@hubspot/api-client';
 import * as logger from "firebase-functions/logger";
 import fetch from 'node-fetch';
-import { HubspotTicketStatus } from './types';
+import { HubspotTicketData, HubspotTicketStatus } from './types';
 import * as firebase from './firebase';
 
 let tokenStore: any
@@ -13,7 +13,7 @@ const GRANT_TYPES = {
 
 export async function getTicketById(id: string) {
   await setAccessToken()
-  const ticket = await hubspotClient.crm.tickets.basicApi.getById(id, ['subject', 'content', 'created_by', 'hs_ticket_priority', 'hs_primary_company', 'source_type', 'hs_last_email_activity', 'contacts', 'hs_created_by_user_id'])
+  const ticket = await hubspotClient.crm.tickets.basicApi.getById(id, ['subject', 'content', 'created_by', 'hs_ticket_priority', 'hs_primary_company', 'source_type', 'hs_last_email_activity', 'contacts', 'hs_created_by_user_id', 'hs_pipeline'])
   // get contacts id list
   const assRes = await fetch(
     `https://api.hubspot.com/crm-associations/v1/associations/${id}/HUBSPOT_DEFINED/16`,
@@ -38,7 +38,7 @@ export async function getTicketById(id: string) {
       lastname: contactRes.properties.lastname
     }
   }
-  return { ...ticket.properties, contact}
+  return { ...ticket.properties, contact} as HubspotTicketData
 }
 
 export async function closeTicketById(id: string) {

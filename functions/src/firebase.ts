@@ -1,4 +1,5 @@
 import * as firebaseAdmin from "firebase-admin";
+import { FirebaseTicket } from "./types";
 
 const serviceAccount = require("../transax-integrations-hubspot.json");
 firebaseAdmin.initializeApp({
@@ -21,7 +22,14 @@ export function saveTicket(ticket: any) {
 
 export function getTicketByIntercomTicketId(intercom_ticket_id: string) {
   return firebaseAdmin.firestore().collection('tickets').where("intercom_ticket_id", "==", intercom_ticket_id).get().then(res => {
-    const documents = res.docs.map((doc) => doc.data());
-    return documents && documents.length > 0 && documents[0]
+    if (res.docs && res.docs.length > 0) {
+      const doc = res.docs[0]
+      return {...doc.data(), id: doc.id} as FirebaseTicket
+    }
+    return null
   })
+}
+
+export function updateTicket(id: string, data: any) {
+  return  firebaseAdmin.firestore().collection('tickets').doc(id).set(data, {merge: true })
 }
