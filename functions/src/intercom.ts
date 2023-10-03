@@ -19,6 +19,10 @@ export async function createBackOfficeTicket(data: HubspotTicketData) {
       })
       if (searchRes?.data && searchRes.data.length > 0) {
         contactId = searchRes.data[0].id
+      } else {
+        const createRes = await intercomClient.contacts.createUser({email: data.contact.email, name: `${data.contact.firstname} ${data.contact.lastname}`})
+        logger.info({ "intercom create contact res": createRes })
+        contactId = createRes.id
       }
     }
     const res = await createTicket(contactId, data)
